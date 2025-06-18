@@ -38,7 +38,6 @@ class EnhancedInstallationManager(private val context: Context) {
     private val advancedApkSigner = AdvancedApkSigner(context)
     private val apkBuilder = ApkBuilder(context)
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private val notificationHelper = NotificationHelper(context)
 
     private val installReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -147,16 +146,12 @@ class EnhancedInstallationManager(private val context: Context) {
             } catch (e: Exception) {
                 Log.e(TAG, "Installation failed", e)
                 _installationState.postValue(InstallationState.FAILED)
-                notificationHelper.showInstallationComplete(appInfo.appName, false)
             }
         }
     }
 
     private fun updateProgress(progress: Int, status: String) {
         _installationProgress.postValue(progress)
-        _currentApp.value?.let { app ->
-            notificationHelper.showInstallationProgress(app.appName, progress)
-        }
         Log.d(TAG, "Progress: $progress% - $status")
     }
 
@@ -277,18 +272,6 @@ class EnhancedInstallationManager(private val context: Context) {
             InstallationState.INSTALLED
         } else {
             InstallationState.FAILED
-        }
-        
-        _currentApp.value?.let { app ->
-            notificationHelper.showInstallationComplete(app.appName, success)
-        }
-        
-        if (success) {
-            // Clean up after successful installation
-            scope.launch {
-                delay(2000) // Wait 2 seconds before cleanup
-                notificationHelper.cancelInstallationNotification()
-            }
         }
     }
 
