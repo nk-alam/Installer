@@ -4,7 +4,6 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
 import org.bouncycastle.asn1.x509.Extension
 import org.bouncycastle.asn1.x509.KeyUsage
-import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -18,14 +17,16 @@ import java.util.*
 class CertificateGenerator {
 
     init {
-        Security.addProvider(BouncyCastleProvider())
+        if (Security.getProvider("BC") == null) {
+            Security.addProvider(BouncyCastleProvider())
+        }
     }
 
     fun generateSelfSignedCertificate(keyPair: KeyPair): X509Certificate {
         val now = Date()
         val validity = Date(now.time + 365L * 24 * 60 * 60 * 1000) // 1 year
 
-        val issuer = X500Name("CN=APK Installer Self-Signed Certificate")
+        val issuer = X500Name("CN=APK Installer,O=CoderX,C=US")
         val subject = issuer
 
         val certBuilder = JcaX509v3CertificateBuilder(

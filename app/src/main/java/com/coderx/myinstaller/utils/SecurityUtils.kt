@@ -18,10 +18,18 @@ class SecurityUtils(private val context: Context) {
 
     fun verifyApkSignature(packageName: String): Boolean {
         return try {
-            val packageInfo = context.packageManager.getPackageInfo(
-                packageName,
-                PackageManager.GET_SIGNATURES
-            )
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNATURES.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.GET_SIGNATURES
+                )
+            }
 
             packageInfo.signatures?.isNotEmpty() == true
         } catch (e: Exception) {
@@ -32,10 +40,18 @@ class SecurityUtils(private val context: Context) {
 
     fun getApkSignatureHash(packageName: String): String? {
         return try {
-            val packageInfo = context.packageManager.getPackageInfo(
-                packageName,
-                PackageManager.GET_SIGNATURES
-            )
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNATURES.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.GET_SIGNATURES
+                )
+            }
 
             packageInfo.signatures?.firstOrNull()?.let { signature ->
                 val cert = CertificateFactory.getInstance("X.509")
@@ -55,16 +71,33 @@ class SecurityUtils(private val context: Context) {
     fun isSystemApp(packageName: String): Boolean {
         return try {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                context.packageManager.getPackageInfo(
+                    packageName, 
+                    PackageManager.PackageInfoFlags.of(0)
+                )
             } else {
                 @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(packageName, 0)
             }
+            
             packageInfo.applicationInfo?.let { appInfo ->
                 (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
             } ?: false
         } catch (e: PackageManager.NameNotFoundException) {
             Log.e(TAG, "Package not found: $packageName", e)
+            false
+        }
+    }
+
+    fun validateApkIntegrity(apkPath: String): Boolean {
+        return try {
+            val packageInfo = context.packageManager.getPackageArchiveInfo(
+                apkPath,
+                PackageManager.GET_ACTIVITIES or PackageManager.GET_PERMISSIONS
+            )
+            packageInfo != null
+        } catch (e: Exception) {
+            Log.e(TAG, "APK integrity validation failed", e)
             false
         }
     }

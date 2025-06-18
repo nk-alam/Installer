@@ -1,21 +1,27 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
-    android:viewportWidth="1679"
-    android:viewportHeight="1678"
-    android:width="1679dp"
-    android:height="1678dp">
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Background circle -->
     <path
-        android:pathData="M0.51 0.83L1678.51 0.83L1678.51 1677.6L0.51 1677.6L0.51 0.83Z"
-        android:fillColor="#ED232A" />
+        android:fillColor="#2196F3"
+        android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+    
+    <!-- App icon -->
     <path
-        android:pathData="M294.21 294.31L1385.02 294.31L1385.02 1384.33L294.21 1384.33L294.21 294.31Z"
-        android:fillColor="#FFFFFF" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,14h16c1.1,0 2,0.9 2,2v16c0,1.1 -0.9,2 -2,2H16c-1.1,0 -2,-0.9 -2,-2V16C14,14.9 14.9,14 16,14z" />
+    
+    <!-- Inner details -->
     <path
-        android:pathData="M755.64 0.83L923.38 0.83L923.38 1677.6L755.64 1677.6L755.64 0.83Z"
-        android:fillColor="#FFFFFF" />
+        android:fillColor="#2196F3"
+        android:pathData="M18,18h12v2H18V18z" />
     <path
-        android:pathData="M0.51 755.62L1678.51 755.62L1678.51 923.23L0.51 923.23L0.51 755.62Z"
-        android:fillColor="#FFFFFF" />
+        android:fillColor="#2196F3"
+        android:pathData="M18,22h8v2H18V22z" />
     <path
-        android:pathData="M587.91 587.79L1091.33 587.79L1091.33 1090.84L587.91 1090.84L587.91 587.79Z"
-        android:fillColor="#004C8F" />
+        android:fillColor="#2196F3"
+        android:pathData="M18,26h10v2H18V26z" />
 </vector>

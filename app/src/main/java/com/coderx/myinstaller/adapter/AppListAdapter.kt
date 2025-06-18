@@ -47,30 +47,45 @@ class AppListAdapter(
                     InstallationState.NOT_INSTALLED -> {
                         buttonAction.text = "Install"
                         buttonAction.isEnabled = true
+                        buttonAction.setBackgroundColor(
+                            root.context.getColor(android.R.color.holo_blue_bright)
+                        )
                         buttonAction.setOnClickListener { onInstallClick(appInfo) }
                     }
 
                     InstallationState.INSTALLED -> {
                         buttonAction.text = "Open"
                         buttonAction.isEnabled = true
+                        buttonAction.setBackgroundColor(
+                            root.context.getColor(android.R.color.holo_green_light)
+                        )
                         buttonAction.setOnClickListener { onLaunchClick(appInfo) }
                     }
 
                     InstallationState.UPDATE_AVAILABLE -> {
                         buttonAction.text = "Update"
                         buttonAction.isEnabled = true
+                        buttonAction.setBackgroundColor(
+                            root.context.getColor(android.R.color.holo_orange_light)
+                        )
                         buttonAction.setOnClickListener { onInstallClick(appInfo) }
                     }
 
                     InstallationState.INSTALLING -> {
                         buttonAction.text = "Installing..."
                         buttonAction.isEnabled = false
+                        buttonAction.setBackgroundColor(
+                            root.context.getColor(android.R.color.darker_gray)
+                        )
                         buttonAction.setOnClickListener(null)
                     }
 
                     InstallationState.FAILED -> {
                         buttonAction.text = "Retry"
                         buttonAction.isEnabled = true
+                        buttonAction.setBackgroundColor(
+                            root.context.getColor(android.R.color.holo_red_light)
+                        )
                         buttonAction.setOnClickListener { onInstallClick(appInfo) }
                     }
                 }

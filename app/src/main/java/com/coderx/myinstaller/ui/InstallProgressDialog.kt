@@ -19,20 +19,33 @@ class InstallProgressDialog(
         setContentView(binding.root)
 
         setCancelable(false)
+        setCanceledOnTouchOutside(false)
 
         binding.textAppName.text = "Installing $appName..."
         binding.progressBar.max = 100
+        binding.progressBar.progress = 0
+        binding.textProgress.text = "0%"
+        binding.textStatus.text = "Preparing..."
     }
 
     fun updateProgress(progress: Int) {
         binding.progressBar.progress = progress
         binding.textProgress.text = "$progress%"
 
-        when {
-            progress < 20 -> binding.textStatus.text = "Extracting APK..."
-            progress < 60 -> binding.textStatus.text = "Signing APK..."
-            progress < 90 -> binding.textStatus.text = "Preparing installation..."
-            else -> binding.textStatus.text = "Finalizing..."
+        binding.textStatus.text = when {
+            progress < 20 -> "Building APK..."
+            progress < 50 -> "Signing APK..."
+            progress < 80 -> "Validating APK..."
+            progress < 95 -> "Installing..."
+            else -> "Finalizing..."
+        }
+    }
+
+    fun setCompleted(success: Boolean) {
+        binding.textStatus.text = if (success) {
+            "Installation completed!"
+        } else {
+            "Installation failed!"
         }
     }
 }
