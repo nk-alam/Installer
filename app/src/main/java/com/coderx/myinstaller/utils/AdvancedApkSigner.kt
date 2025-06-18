@@ -7,9 +7,6 @@ import kotlinx.coroutines.withContext
 import java.io.*
 import java.security.*
 import java.security.cert.X509Certificate
-import java.util.jar.Attributes
-import java.util.jar.JarFile
-import java.util.jar.Manifest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -69,7 +66,11 @@ class AdvancedApkSigner(private val context: Context) {
             Log.d(TAG, "Signed APK created: $outputPath")
 
         } catch (e: Exception) {
-            tempFile.delete()
+            try {
+                tempFile.delete()
+            } catch (deleteException: Exception) {
+                Log.w(TAG, "Failed to delete temp file", deleteException)
+            }
             throw e
         }
     }
@@ -101,10 +102,14 @@ class AdvancedApkSigner(private val context: Context) {
             var entry = zis.nextEntry
             while (entry != null) {
                 if (!entry.isDirectory && !entry.name.startsWith("META-INF/")) {
-                    val digest = calculateSha1Digest(zis)
-                    manifest.appendLine("Name: ${entry.name}")
-                    manifest.appendLine("SHA1-Digest: $digest")
-                    manifest.appendLine()
+                    try {
+                        val digest = calculateSha1Digest(zis)
+                        manifest.appendLine("Name: ${entry.name}")
+                        manifest.appendLine("SHA1-Digest: $digest")
+                        manifest.appendLine()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to calculate digest for ${entry.name}", e)
+                    }
                 }
                 entry = zis.nextEntry
             }
@@ -131,12 +136,17 @@ class AdvancedApkSigner(private val context: Context) {
         privateKey: PrivateKey,
         certificate: X509Certificate
     ): ByteArray {
-        // This is a simplified signature block
-        // In production, use proper PKCS#7 signature format
-        val signature = Signature.getInstance("SHA1withRSA")
-        signature.initSign(privateKey)
-        signature.update(signatureFile.toByteArray())
-        return signature.sign()
+        return try {
+            // This is a simplified signature block
+            // In production, use proper PKCS#7 signature format
+            val signature = Signature.getInstance("SHA1withRSA")
+            signature.initSign(privateKey)
+            signature.update(signatureFile.toByteArray())
+            signature.sign()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to generate signature block", e)
+            ByteArray(0)
+        }
     }
 
     private fun addSignatureFiles(
@@ -176,21 +186,31 @@ class AdvancedApkSigner(private val context: Context) {
     }
 
     private fun calculateSha1Digest(data: ByteArray): String {
-        val digest = MessageDigest.getInstance("SHA-1")
-        val hash = digest.digest(data)
-        return android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)
+        return try {
+            val digest = MessageDigest.getInstance("SHA-1")
+            val hash = digest.digest(data)
+            android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to calculate SHA-1 digest", e)
+            ""
+        }
     }
 
     private fun calculateSha1Digest(inputStream: InputStream): String {
-        val digest = MessageDigest.getInstance("SHA-1")
-        val buffer = ByteArray(8192)
-        var bytesRead: Int
-        
-        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-            digest.update(buffer, 0, bytesRead)
+        return try {
+            val digest = MessageDigest.getInstance("SHA-1")
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
+            
+            val hash = digest.digest()
+            android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to calculate SHA-1 digest from stream", e)
+            ""
         }
-        
-        val hash = digest.digest()
-        return android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)
     }
 }

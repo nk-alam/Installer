@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -18,7 +17,6 @@ import com.coderx.myinstaller.data.AppInfo
 import com.coderx.myinstaller.data.InstallationState
 import kotlinx.coroutines.*
 import java.io.File
-import java.io.FileOutputStream
 
 class EnhancedInstallationManager(private val context: Context) {
 
@@ -41,58 +39,75 @@ class EnhancedInstallationManager(private val context: Context) {
 
     private val installReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                InstallReceiver.ACTION_INSTALLATION_STATUS -> {
-                    val packageName = intent.getStringExtra(InstallReceiver.EXTRA_PACKAGE_NAME)
-                    val success = intent.getBooleanExtra(InstallReceiver.EXTRA_SUCCESS, false)
-                    
-                    if (packageName == _currentApp.value?.packageName) {
-                        onInstallationResult(success)
+            try {
+                when (intent?.action) {
+                    InstallReceiver.ACTION_INSTALLATION_STATUS -> {
+                        val packageName = intent.getStringExtra(InstallReceiver.EXTRA_PACKAGE_NAME)
+                        val success = intent.getBooleanExtra(InstallReceiver.EXTRA_SUCCESS, false)
+                        
+                        if (packageName == _currentApp.value?.packageName) {
+                            onInstallationResult(success)
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in install receiver", e)
             }
         }
     }
 
     init {
-        // Register for installation status updates
-        val filter = IntentFilter(InstallReceiver.ACTION_INSTALLATION_STATUS)
-        context.registerReceiver(installReceiver, filter)
+        try {
+            // Register for installation status updates
+            val filter = IntentFilter(InstallReceiver.ACTION_INSTALLATION_STATUS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(installReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                context.registerReceiver(installReceiver, filter)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register receiver", e)
+        }
     }
 
     fun getAvailableApps(): List<AppInfo> {
-        return listOf(
-            AppInfo(
-                packageName = "com.example.sampleapp",
-                appName = "Sample App",
-                versionName = "1.0.0",
-                versionCode = 1,
-                iconResId = R.drawable.ic_app_default,
-                apkAssetPath = "sample_app.apk",
-                description = "A sample application demonstrating basic Android functionality with modern UI components and smooth animations.",
-                size = 2048000L,
-                permissions = listOf(
-                    "android.permission.INTERNET",
-                    "android.permission.ACCESS_NETWORK_STATE"
-                )
-            ),
-            AppInfo(
-                packageName = "com.example.demoapp",
-                appName = "Demo App",
-                versionName = "2.1.0",
-                versionCode = 21,
-                iconResId = R.drawable.ic_app_default,
-                apkAssetPath = "demo_app.apk",
-                description = "Advanced demo application featuring camera integration, location services, and file management capabilities.",
-                size = 5120000L,
-                permissions = listOf(
-                    "android.permission.CAMERA",
-                    "android.permission.WRITE_EXTERNAL_STORAGE",
-                    "android.permission.ACCESS_FINE_LOCATION",
-                    "android.permission.RECORD_AUDIO"
+        return try {
+            listOf(
+                AppInfo(
+                    packageName = "com.example.sampleapp",
+                    appName = "Sample App",
+                    versionName = "1.0.0",
+                    versionCode = 1,
+                    iconResId = R.drawable.ic_app_default,
+                    apkAssetPath = "sample_app.apk",
+                    description = "A sample application demonstrating basic Android functionality with modern UI components and smooth animations.",
+                    size = 2048000L,
+                    permissions = listOf(
+                        "android.permission.INTERNET",
+                        "android.permission.ACCESS_NETWORK_STATE"
+                    )
+                ),
+                AppInfo(
+                    packageName = "com.example.demoapp",
+                    appName = "Demo App",
+                    versionName = "2.1.0",
+                    versionCode = 21,
+                    iconResId = R.drawable.ic_app_default,
+                    apkAssetPath = "demo_app.apk",
+                    description = "Advanced demo application featuring camera integration, location services, and file management capabilities.",
+                    size = 5120000L,
+                    permissions = listOf(
+                        "android.permission.CAMERA",
+                        "android.permission.WRITE_EXTERNAL_STORAGE",
+                        "android.permission.ACCESS_FINE_LOCATION",
+                        "android.permission.RECORD_AUDIO"
+                    )
                 )
             )
-        )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get available apps", e)
+            emptyList()
+        }
     }
 
     fun checkInstallationState(appInfo: AppInfo): InstallationState {
@@ -113,46 +128,58 @@ class EnhancedInstallationManager(private val context: Context) {
             }
         } catch (e: PackageManager.NameNotFoundException) {
             InstallationState.NOT_INSTALLED
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking installation state", e)
+            InstallationState.NOT_INSTALLED
         }
     }
 
     fun installApp(appInfo: AppInfo) {
-        _currentApp.value = appInfo
-        _installationState.value = InstallationState.INSTALLING
-        _installationProgress.value = 0
+        try {
+            _currentApp.value = appInfo
+            _installationState.value = InstallationState.INSTALLING
+            _installationProgress.value = 0
 
-        scope.launch {
-            try {
-                // Step 1: Build APK dynamically (30%)
-                updateProgress(10, "Building APK...")
-                val builtApk = buildApkDynamically(appInfo)
+            scope.launch {
+                try {
+                    // Step 1: Build APK dynamically (30%)
+                    updateProgress(10, "Building APK...")
+                    val builtApk = buildApkDynamically(appInfo)
 
-                // Step 2: Sign APK with advanced signing (60%)
-                updateProgress(40, "Signing APK...")
-                val signedApk = signApkAdvanced(builtApk, appInfo.packageName)
+                    // Step 2: Sign APK with advanced signing (60%)
+                    updateProgress(40, "Signing APK...")
+                    val signedApk = signApkAdvanced(builtApk, appInfo.packageName)
 
-                // Step 3: Validate signed APK (80%)
-                updateProgress(70, "Validating APK...")
-                if (!validateSignedApk(signedApk)) {
-                    throw RuntimeException("APK validation failed")
+                    // Step 3: Validate signed APK (80%)
+                    updateProgress(70, "Validating APK...")
+                    if (!validateSignedApk(signedApk)) {
+                        throw RuntimeException("APK validation failed")
+                    }
+
+                    // Step 4: Install APK (100%)
+                    updateProgress(90, "Installing...")
+                    installSignedApk(signedApk)
+
+                    updateProgress(100, "Installation complete!")
+
+                } catch (e: Exception) {
+                    Log.e(TAG, "Installation failed", e)
+                    _installationState.postValue(InstallationState.FAILED)
                 }
-
-                // Step 4: Install APK (100%)
-                updateProgress(90, "Installing...")
-                installSignedApk(signedApk)
-
-                updateProgress(100, "Installation complete!")
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Installation failed", e)
-                _installationState.postValue(InstallationState.FAILED)
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start installation", e)
+            _installationState.value = InstallationState.FAILED
         }
     }
 
     private fun updateProgress(progress: Int, status: String) {
-        _installationProgress.postValue(progress)
-        Log.d(TAG, "Progress: $progress% - $status")
+        try {
+            _installationProgress.postValue(progress)
+            Log.d(TAG, "Progress: $progress% - $status")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update progress", e)
+        }
     }
 
     private suspend fun buildApkDynamically(appInfo: AppInfo): File = withContext(Dispatchers.IO) {
@@ -191,7 +218,11 @@ class EnhancedInstallationManager(private val context: Context) {
         }
 
         // Clean up original file
-        inputApk.delete()
+        try {
+            inputApk.delete()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to delete temporary file", e)
+        }
 
         signedApkFile
     }
@@ -268,10 +299,14 @@ class EnhancedInstallationManager(private val context: Context) {
     }
 
     private fun onInstallationResult(success: Boolean) {
-        _installationState.value = if (success) {
-            InstallationState.INSTALLED
-        } else {
-            InstallationState.FAILED
+        try {
+            _installationState.value = if (success) {
+                InstallationState.INSTALLED
+            } else {
+                InstallationState.FAILED
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update installation result", e)
         }
     }
 

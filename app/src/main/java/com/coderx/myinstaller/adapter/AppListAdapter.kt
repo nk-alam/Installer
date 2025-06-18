@@ -26,7 +26,11 @@ class AppListAdapter(
     }
 
     override fun onBindViewHolder(holder: AppViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        try {
+            holder.bind(getItem(position))
+        } catch (e: Exception) {
+            // Handle binding errors gracefully
+        }
     }
 
     inner class AppViewHolder(
@@ -34,67 +38,75 @@ class AppListAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(appInfo: AppInfo) {
-            binding.apply {
-                textAppName.text = appInfo.appName
-                textAppVersion.text = "v${appInfo.versionName}"
-                textAppDescription.text = appInfo.description
-                textAppSize.text = formatFileSize(appInfo.size)
-                imageAppIcon.setImageResource(appInfo.iconResId)
+            try {
+                binding.apply {
+                    textAppName.text = appInfo.appName
+                    textAppVersion.text = "v${appInfo.versionName}"
+                    textAppDescription.text = appInfo.description
+                    textAppSize.text = formatFileSize(appInfo.size)
+                    imageAppIcon.setImageResource(appInfo.iconResId)
 
-                val installationState = checkInstallationState(appInfo)
+                    val installationState = checkInstallationState(appInfo)
 
-                when (installationState) {
-                    InstallationState.NOT_INSTALLED -> {
-                        buttonAction.text = "Install"
-                        buttonAction.isEnabled = true
-                        buttonAction.setBackgroundColor(
-                            root.context.getColor(android.R.color.holo_blue_bright)
-                        )
-                        buttonAction.setOnClickListener { onInstallClick(appInfo) }
-                    }
+                    when (installationState) {
+                        InstallationState.NOT_INSTALLED -> {
+                            buttonAction.text = "Install"
+                            buttonAction.isEnabled = true
+                            buttonAction.setBackgroundColor(
+                                root.context.getColor(android.R.color.holo_blue_bright)
+                            )
+                            buttonAction.setOnClickListener { onInstallClick(appInfo) }
+                        }
 
-                    InstallationState.INSTALLED -> {
-                        buttonAction.text = "Open"
-                        buttonAction.isEnabled = true
-                        buttonAction.setBackgroundColor(
-                            root.context.getColor(android.R.color.holo_green_light)
-                        )
-                        buttonAction.setOnClickListener { onLaunchClick(appInfo) }
-                    }
+                        InstallationState.INSTALLED -> {
+                            buttonAction.text = "Open"
+                            buttonAction.isEnabled = true
+                            buttonAction.setBackgroundColor(
+                                root.context.getColor(android.R.color.holo_green_light)
+                            )
+                            buttonAction.setOnClickListener { onLaunchClick(appInfo) }
+                        }
 
-                    InstallationState.UPDATE_AVAILABLE -> {
-                        buttonAction.text = "Update"
-                        buttonAction.isEnabled = true
-                        buttonAction.setBackgroundColor(
-                            root.context.getColor(android.R.color.holo_orange_light)
-                        )
-                        buttonAction.setOnClickListener { onInstallClick(appInfo) }
-                    }
+                        InstallationState.UPDATE_AVAILABLE -> {
+                            buttonAction.text = "Update"
+                            buttonAction.isEnabled = true
+                            buttonAction.setBackgroundColor(
+                                root.context.getColor(android.R.color.holo_orange_light)
+                            )
+                            buttonAction.setOnClickListener { onInstallClick(appInfo) }
+                        }
 
-                    InstallationState.INSTALLING -> {
-                        buttonAction.text = "Installing..."
-                        buttonAction.isEnabled = false
-                        buttonAction.setBackgroundColor(
-                            root.context.getColor(android.R.color.darker_gray)
-                        )
-                        buttonAction.setOnClickListener(null)
-                    }
+                        InstallationState.INSTALLING -> {
+                            buttonAction.text = "Installing..."
+                            buttonAction.isEnabled = false
+                            buttonAction.setBackgroundColor(
+                                root.context.getColor(android.R.color.darker_gray)
+                            )
+                            buttonAction.setOnClickListener(null)
+                        }
 
-                    InstallationState.FAILED -> {
-                        buttonAction.text = "Retry"
-                        buttonAction.isEnabled = true
-                        buttonAction.setBackgroundColor(
-                            root.context.getColor(android.R.color.holo_red_light)
-                        )
-                        buttonAction.setOnClickListener { onInstallClick(appInfo) }
+                        InstallationState.FAILED -> {
+                            buttonAction.text = "Retry"
+                            buttonAction.isEnabled = true
+                            buttonAction.setBackgroundColor(
+                                root.context.getColor(android.R.color.holo_red_light)
+                            )
+                            buttonAction.setOnClickListener { onInstallClick(appInfo) }
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                // Handle binding errors gracefully
             }
         }
 
         private fun formatFileSize(bytes: Long): String {
-            val mb = bytes / (1024.0 * 1024.0)
-            return "${mb.roundToInt()} MB"
+            return try {
+                val mb = bytes / (1024.0 * 1024.0)
+                "${mb.roundToInt()} MB"
+            } catch (e: Exception) {
+                "Unknown size"
+            }
         }
     }
 

@@ -3,11 +3,8 @@ package com.coderx.myinstaller.utils
 import android.content.Context
 import android.util.Log
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.security.*
 import java.security.cert.X509Certificate
-import javax.crypto.KeyGenerator
 
 class KeystoreManager(private val context: Context) {
 
@@ -17,7 +14,9 @@ class KeystoreManager(private val context: Context) {
         private const val KEY_ALIAS = "apk_signer"
 
         init {
-            Security.addProvider(BouncyCastleProvider())
+            if (Security.getProvider("BC") == null) {
+                Security.addProvider(BouncyCastleProvider())
+            }
         }
     }
 
@@ -33,8 +32,13 @@ class KeystoreManager(private val context: Context) {
 
     private fun loadKeystoreFromAssets(): KeyStore {
         val keystore = KeyStore.getInstance("PKCS12")
-        context.assets.open("keystore.p12").use { inputStream ->
-            keystore.load(inputStream, KEYSTORE_PASSWORD.toCharArray())
+        try {
+            context.assets.open("keystore.p12").use { inputStream ->
+                keystore.load(inputStream, KEYSTORE_PASSWORD.toCharArray())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load keystore from assets", e)
+            throw e
         }
         return keystore
     }
@@ -43,29 +47,39 @@ class KeystoreManager(private val context: Context) {
         val keystore = KeyStore.getInstance("PKCS12")
         keystore.load(null, null)
 
-        // Generate RSA key pair
-        val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
-        keyPairGenerator.initialize(2048)
-        val keyPair = keyPairGenerator.generateKeyPair()
+        try {
+            // Generate RSA key pair
+            val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+            keyPairGenerator.initialize(2048)
+            val keyPair = keyPairGenerator.generateKeyPair()
 
-        // Create self-signed certificate
-        val certificateGenerator = CertificateGenerator()
-        val certificate = certificateGenerator.generateSelfSignedCertificate(keyPair)
+            // Create self-signed certificate
+            val certificateGenerator = CertificateGenerator()
+            val certificate = certificateGenerator.generateSelfSignedCertificate(keyPair)
 
-        // Store in keystore
-        keystore.setKeyEntry(
-            KEY_ALIAS,
-            keyPair.private,
-            KEYSTORE_PASSWORD.toCharArray(),
-            arrayOf(certificate)
-        )
+            // Store in keystore
+            keystore.setKeyEntry(
+                KEY_ALIAS,
+                keyPair.private,
+                KEYSTORE_PASSWORD.toCharArray(),
+                arrayOf(certificate)
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create keystore", e)
+            throw e
+        }
 
         return keystore
     }
 
     fun getSigningKey(keystore: KeyStore): Pair<PrivateKey, X509Certificate> {
-        val privateKey = keystore.getKey(KEY_ALIAS, KEYSTORE_PASSWORD.toCharArray()) as PrivateKey
-        val certificate = keystore.getCertificate(KEY_ALIAS) as X509Certificate
-        return Pair(privateKey, certificate)
+        return try {
+            val privateKey = keystore.getKey(KEY_ALIAS, KEYSTORE_PASSWORD.toCharArray()) as PrivateKey
+            val certificate = keystore.getCertificate(KEY_ALIAS) as X509Certificate
+            Pair(privateKey, certificate)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get signing key", e)
+            throw e
+        }
     }
 }
