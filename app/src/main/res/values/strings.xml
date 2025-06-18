@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">APK Store</string>
+    <string name="install">Install</string>
+    <string name="open">Open</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="installing">Installing…</string>
+    <string name="installed">Installed</string>
+    <string name="install_failed">Installation failed</string>
+    <string name="permission_required">Permission Required</string>
+    <string name="install_permission_message">This app needs permission to install APK files</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="cancel">Cancel</string>
+    <string name="app_store">App Store</string>
+    <string name="featured_apps">Featured Apps</string>
+    <string name="my_apps">My Apps</string>
+    <string name="settings">Settings</string>
+</resources>
