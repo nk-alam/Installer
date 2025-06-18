@@ -50,6 +50,26 @@ android {
             excludes += "/META-INF/LICENSE.txt"
             excludes += "/META-INF/NOTICE"
             excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/INDEX.LIST"
+            excludes += "/META-INF/io.netty.versions.properties"
+            
+            // Fix BouncyCastle packaging conflicts
+            excludes += "/META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+            excludes += "/META-INF/versions/*/OSGI-INF/MANIFEST.MF"
+            excludes += "/META-INF/MANIFEST.MF"
+            excludes += "/OSGI-INF/MANIFEST.MF"
+            
+            // Additional BouncyCastle exclusions
+            excludes += "/META-INF/BC1024KE.SF"
+            excludes += "/META-INF/BC1024KE.DSA"
+            excludes += "/META-INF/BC2048KE.SF"
+            excludes += "/META-INF/BC2048KE.DSA"
+            
+            // JSpecify exclusions
+            excludes += "/META-INF/jspecify_annotations.kotlin_module"
+            
+            // Merge duplicate files instead of excluding if needed
+            pickFirsts += "/META-INF/services/java.security.Provider"
         }
     }
 }
@@ -71,9 +91,13 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.10.1")
     implementation("androidx.fragment:fragment-ktx:1.8.8")
 
-    // For APK signing (BouncyCastle)
-    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
+    // For APK signing (BouncyCastle) - Using specific versions to avoid conflicts
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1") {
+        exclude(group = "org.jspecify", module = "jspecify")
+    }
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1") {
+        exclude(group = "org.jspecify", module = "jspecify")
+    }
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
