@@ -17,13 +17,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.coderx.myinstaller.adapter.AppListAdapter
 import com.coderx.myinstaller.databinding.ActivityInstallBinding
-import com.coderx.myinstaller.utils.InstallationManager
+import com.coderx.myinstaller.utils.EnhancedInstallationManager
 import kotlinx.coroutines.launch
 
 class InstallActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityInstallBinding
-    private lateinit var installationManager: InstallationManager
+    private lateinit var installationManager: EnhancedInstallationManager
     private lateinit var appAdapter: AppListAdapter
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -54,7 +54,7 @@ class InstallActivity : AppCompatActivity() {
         binding = ActivityInstallBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        installationManager = InstallationManager(this)
+        installationManager = EnhancedInstallationManager(this)
 
         checkPermissions()
     }
@@ -62,7 +62,6 @@ class InstallActivity : AppCompatActivity() {
     private fun checkPermissions() {
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                // Android 13+ - Check notification permission first
                 if (ContextCompat.checkSelfPermission(
                         this,
                         Manifest.permission.POST_NOTIFICATIONS
@@ -77,7 +76,6 @@ class InstallActivity : AppCompatActivity() {
                 checkInstallPermission()
             }
             else -> {
-                // Android 7 and below
                 if (ContextCompat.checkSelfPermission(
                         this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -105,8 +103,8 @@ class InstallActivity : AppCompatActivity() {
 
     private fun showInstallPermissionDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Install Permission Required")
-            .setMessage("This app needs permission to install other apps. Please enable 'Install unknown apps' in the settings.")
+            .setTitle("🔐 Install Permission Required")
+            .setMessage("To install apps like Play Store, this app needs permission to install other apps. Please enable 'Install unknown apps' in the settings.")
             .setPositiveButton("Go to Settings") { _, _ ->
                 val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:$packageName")
@@ -122,7 +120,7 @@ class InstallActivity : AppCompatActivity() {
 
     private fun showPermissionDeniedDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Permission Required")
+            .setTitle("⚠️ Permission Required")
             .setMessage("This app requires storage permission to function properly.")
             .setPositiveButton("Retry") { _, _ ->
                 checkPermissions()
@@ -135,7 +133,7 @@ class InstallActivity : AppCompatActivity() {
 
     private fun showInstallPermissionDeniedDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Install Permission Required")
+            .setTitle("❌ Install Permission Required")
             .setMessage("Without install permission, this app cannot install other apps.")
             .setPositiveButton("Retry") { _, _ ->
                 checkInstallPermission()
@@ -184,16 +182,14 @@ class InstallActivity : AppCompatActivity() {
                 else -> View.GONE
             }
 
-            // Refresh the adapter to update button states
             appAdapter.notifyDataSetChanged()
 
-            // Show toast for completion or failure
             when (state) {
                 com.coderx.myinstaller.data.InstallationState.INSTALLED -> {
-                    Toast.makeText(this, "Installation completed successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "✅ Installation completed successfully!", Toast.LENGTH_SHORT).show()
                 }
                 com.coderx.myinstaller.data.InstallationState.FAILED -> {
-                    Toast.makeText(this, "Installation failed. Please try again.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "❌ Installation failed. Please try again.", Toast.LENGTH_LONG).show()
                 }
                 else -> { /* No action needed */ }
             }
@@ -211,7 +207,7 @@ class InstallActivity : AppCompatActivity() {
     private fun loadApps() {
         lifecycleScope.launch {
             try {
-                val apps = installationManager.getInstalledApps()
+                val apps = installationManager.getAvailableApps()
                 appAdapter.submitList(apps)
                 
                 if (apps.isEmpty()) {
@@ -225,8 +221,6 @@ class InstallActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh the list when returning to the activity
-        // This helps update the installation states
         appAdapter.notifyDataSetChanged()
     }
 

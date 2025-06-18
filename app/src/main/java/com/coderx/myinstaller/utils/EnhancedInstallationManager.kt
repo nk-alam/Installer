@@ -1,7 +1,9 @@
 package com.coderx.myinstaller.utils
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,19 +12,18 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.coderx.myinstaller.InstallReceiver
 import com.coderx.myinstaller.R
 import com.coderx.myinstaller.data.AppInfo
 import com.coderx.myinstaller.data.InstallationState
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 
-class InstallationManager(private val context: Context) {
+class EnhancedInstallationManager(private val context: Context) {
 
     companion object {
-        private const val TAG = "InstallationManager"
-        private const val INSTALL_REQUEST_CODE = 1001
+        private const val TAG = "EnhancedInstallationManager"
     }
 
     private val _installationProgress = MutableLiveData<Int>()
@@ -34,12 +35,33 @@ class InstallationManager(private val context: Context) {
     private val _currentApp = MutableLiveData<AppInfo?>()
     val currentApp: LiveData<AppInfo?> = _currentApp
 
-    private val apkSigner = ApkSigner(context)
+    private val advancedApkSigner = AdvancedApkSigner(context)
+    private val apkBuilder = ApkBuilder(context)
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val notificationHelper = NotificationHelper(context)
 
-    fun getInstalledApps(): List<AppInfo> {
-        // Return list of bundled apps that can be installed
+    private val installReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                InstallReceiver.ACTION_INSTALLATION_STATUS -> {
+                    val packageName = intent.getStringExtra(InstallReceiver.EXTRA_PACKAGE_NAME)
+                    val success = intent.getBooleanExtra(InstallReceiver.EXTRA_SUCCESS, false)
+                    
+                    if (packageName == _currentApp.value?.packageName) {
+                        onInstallationResult(success)
+                    }
+                }
+            }
+        }
+    }
+
+    init {
+        // Register for installation status updates
+        val filter = IntentFilter(InstallReceiver.ACTION_INSTALLATION_STATUS)
+        context.registerReceiver(installReceiver, filter)
+    }
+
+    fun getAvailableApps(): List<AppInfo> {
         return listOf(
             AppInfo(
                 packageName = "com.example.sampleapp",
@@ -48,7 +70,7 @@ class InstallationManager(private val context: Context) {
                 versionCode = 1,
                 iconResId = R.drawable.ic_app_default,
                 apkAssetPath = "sample_app.apk",
-                description = "A sample application for testing the installer functionality. This app demonstrates basic Android features.",
+                description = "A sample application demonstrating basic Android functionality with modern UI components and smooth animations.",
                 size = 2048000L,
                 permissions = listOf(
                     "android.permission.INTERNET",
@@ -62,7 +84,7 @@ class InstallationManager(private val context: Context) {
                 versionCode = 21,
                 iconResId = R.drawable.ic_app_default,
                 apkAssetPath = "demo_app.apk",
-                description = "Advanced demo application with camera, storage, and location features for comprehensive testing.",
+                description = "Advanced demo application featuring camera integration, location services, and file management capabilities.",
                 size = 5120000L,
                 permissions = listOf(
                     "android.permission.CAMERA",
@@ -102,31 +124,25 @@ class InstallationManager(private val context: Context) {
 
         scope.launch {
             try {
-                // Step 1: Extract APK from assets (20%)
-                updateProgress(10, "Extracting APK...")
-                val extractedApk = extractApkFromAssets(appInfo.apkAssetPath)
+                // Step 1: Build APK dynamically (30%)
+                updateProgress(10, "Building APK...")
+                val builtApk = buildApkDynamically(appInfo)
 
-                // Step 2: Validate APK (40%)
-                updateProgress(30, "Validating APK...")
-                if (!validateApk(extractedApk)) {
+                // Step 2: Sign APK with advanced signing (60%)
+                updateProgress(40, "Signing APK...")
+                val signedApk = signApkAdvanced(builtApk, appInfo.packageName)
+
+                // Step 3: Validate signed APK (80%)
+                updateProgress(70, "Validating APK...")
+                if (!validateSignedApk(signedApk)) {
                     throw RuntimeException("APK validation failed")
                 }
 
-                // Step 3: Sign APK (70%)
-                updateProgress(50, "Signing APK...")
-                val signedApk = signApk(extractedApk, appInfo.packageName)
-
-                // Step 4: Prepare installation (90%)
-                updateProgress(80, "Preparing installation...")
-                
-                // Step 5: Install APK (100%)
-                updateProgress(95, "Installing...")
-                installApkFile(signedApk)
+                // Step 4: Install APK (100%)
+                updateProgress(90, "Installing...")
+                installSignedApk(signedApk)
 
                 updateProgress(100, "Installation complete!")
-                
-                // Show completion notification
-                notificationHelper.showInstallationComplete(appInfo.appName, true)
 
             } catch (e: Exception) {
                 Log.e(TAG, "Installation failed", e)
@@ -141,55 +157,42 @@ class InstallationManager(private val context: Context) {
         _currentApp.value?.let { app ->
             notificationHelper.showInstallationProgress(app.appName, progress)
         }
+        Log.d(TAG, "Progress: $progress% - $status")
     }
 
-    private suspend fun extractApkFromAssets(assetPath: String): File = withContext(Dispatchers.IO) {
-        val outputDir = File(context.getExternalFilesDir(null), "apks")
+    private suspend fun buildApkDynamically(appInfo: AppInfo): File = withContext(Dispatchers.IO) {
+        val outputDir = File(context.getExternalFilesDir(null), "built_apks")
         if (!outputDir.exists()) {
             outputDir.mkdirs()
         }
 
-        val outputFile = File(outputDir, "temp_${System.currentTimeMillis()}.apk")
+        val outputFile = File(outputDir, "built_${appInfo.packageName}_${System.currentTimeMillis()}.apk")
 
-        try {
-            context.assets.open(assetPath).use { input ->
-                FileOutputStream(outputFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-                    var totalBytes = 0L
-                    val availableBytes = input.available().toLong()
+        val success = apkBuilder.buildMinimalApk(
+            appInfo.packageName,
+            appInfo.appName,
+            appInfo.versionName,
+            appInfo.versionCode.toInt(),
+            outputFile
+        )
 
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                        totalBytes += bytesRead
-
-                        // Update progress (0-20%)
-                        if (availableBytes > 0) {
-                            val progress = ((totalBytes * 20) / availableBytes).toInt()
-                            _installationProgress.postValue(minOf(progress, 20))
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract APK from assets", e)
-            throw RuntimeException("Failed to extract APK: ${e.message}")
+        if (!success) {
+            throw RuntimeException("Failed to build APK")
         }
 
         outputFile
     }
 
-    private suspend fun signApk(inputApk: File, packageName: String): File = withContext(Dispatchers.IO) {
+    private suspend fun signApkAdvanced(inputApk: File, packageName: String): File = withContext(Dispatchers.IO) {
         val signedApkFile = File(inputApk.parent, "signed_${packageName}_${System.currentTimeMillis()}.apk")
 
-        val success = apkSigner.signApk(
+        val success = advancedApkSigner.signApkAdvanced(
             inputApk.absolutePath,
-            signedApkFile.absolutePath,
-            "keystore.p12"
+            signedApkFile.absolutePath
         )
 
         if (!success) {
-            throw RuntimeException("APK signing failed")
+            throw RuntimeException("Advanced APK signing failed")
         }
 
         // Clean up original file
@@ -198,7 +201,34 @@ class InstallationManager(private val context: Context) {
         signedApkFile
     }
 
-    private suspend fun installApkFile(apkFile: File) = withContext(Dispatchers.Main) {
+    private suspend fun validateSignedApk(apkFile: File): Boolean = withContext(Dispatchers.IO) {
+        try {
+            if (!apkFile.exists() || apkFile.length() == 0L) {
+                Log.e(TAG, "Signed APK file does not exist or is empty")
+                return@withContext false
+            }
+
+            // Validate APK structure
+            val packageManager = context.packageManager
+            val packageInfo = packageManager.getPackageArchiveInfo(
+                apkFile.absolutePath,
+                PackageManager.GET_ACTIVITIES or PackageManager.GET_PERMISSIONS
+            )
+            
+            if (packageInfo == null) {
+                Log.e(TAG, "Could not parse signed APK file")
+                return@withContext false
+            }
+
+            Log.d(TAG, "Signed APK validation successful: ${packageInfo.packageName}")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Signed APK validation failed", e)
+            false
+        }
+    }
+
+    private suspend fun installSignedApk(apkFile: File) = withContext(Dispatchers.Main) {
         try {
             val uri = FileProvider.getUriForFile(
                 context,
@@ -210,13 +240,11 @@ class InstallationManager(private val context: Context) {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
                 
-                // For Android 14+ (API 34+), add additional flags
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     addFlags(Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER)
                 }
             }
 
-            // Check if there's an activity that can handle this intent
             if (intent.resolveActivity(context.packageManager) != null) {
                 context.startActivity(intent)
             } else {
@@ -227,45 +255,6 @@ class InstallationManager(private val context: Context) {
             Log.e(TAG, "Failed to start installation", e)
             _installationState.postValue(InstallationState.FAILED)
             throw e
-        }
-    }
-
-    suspend fun validateApk(apkFile: File): Boolean = withContext(Dispatchers.IO) {
-        try {
-            if (!apkFile.exists() || apkFile.length() == 0L) {
-                Log.e(TAG, "APK file does not exist or is empty")
-                return@withContext false
-            }
-
-            // Try to get package info from the APK
-            val packageManager = context.packageManager
-            val packageInfo = packageManager.getPackageArchiveInfo(
-                apkFile.absolutePath,
-                PackageManager.GET_ACTIVITIES or PackageManager.GET_PERMISSIONS
-            )
-            
-            if (packageInfo == null) {
-                Log.e(TAG, "Could not parse APK file")
-                return@withContext false
-            }
-
-            Log.d(TAG, "APK validation successful: ${packageInfo.packageName}")
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "APK validation failed", e)
-            false
-        }
-    }
-
-    fun getAppPermissions(appInfo: AppInfo): List<String> {
-        return appInfo.permissions
-    }
-
-    suspend fun checkApkIntegrity(apkFile: File): Boolean = withContext(Dispatchers.IO) {
-        try {
-            apkFile.exists() && apkFile.length() > 1000 // At least 1KB
-        } catch (e: Exception) {
-            false
         }
     }
 
@@ -283,28 +272,42 @@ class InstallationManager(private val context: Context) {
         }
     }
 
-    fun onInstallationResult(success: Boolean) {
+    private fun onInstallationResult(success: Boolean) {
         _installationState.value = if (success) {
             InstallationState.INSTALLED
         } else {
             InstallationState.FAILED
         }
         
+        _currentApp.value?.let { app ->
+            notificationHelper.showInstallationComplete(app.appName, success)
+        }
+        
         if (success) {
-            notificationHelper.cancelInstallationNotification()
+            // Clean up after successful installation
+            scope.launch {
+                delay(2000) // Wait 2 seconds before cleanup
+                notificationHelper.cancelInstallationNotification()
+            }
         }
     }
 
     fun cleanup() {
+        try {
+            context.unregisterReceiver(installReceiver)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to unregister receiver", e)
+        }
+        
         scope.cancel()
         
         // Clean up temporary files
         scope.launch {
             try {
-                val apkDir = File(context.getExternalFilesDir(null), "apks")
+                val apkDir = File(context.getExternalFilesDir(null), "built_apks")
                 if (apkDir.exists()) {
                     apkDir.listFiles()?.forEach { file ->
-                        if (file.name.startsWith("temp_") || file.name.startsWith("signed_")) {
+                        if (file.name.startsWith("built_") || file.name.startsWith("signed_")) {
                             file.delete()
                         }
                     }
