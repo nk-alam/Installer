@@ -34,16 +34,13 @@ abstract class StringEncryptionTask : DefaultTask() {
         }
         outputDirectory.mkdirs()
         
+        // Copy the entire directory structure first
+        inputDirectory.copyRecursively(outputDirectory, overwrite = true)
+        
         // Process all Kotlin and Java files
-        inputDirectory.walkTopDown().forEach { file ->
+        outputDirectory.walkTopDown().forEach { file ->
             if (file.isFile && (file.extension == "kt" || file.extension == "java")) {
-                processSourceFile(file, inputDirectory, outputDirectory)
-            } else if (file.isFile) {
-                // Copy non-source files as-is
-                val relativePath = file.relativeTo(inputDirectory)
-                val outputFile = File(outputDirectory, relativePath.path)
-                outputFile.parentFile?.mkdirs()
-                file.copyTo(outputFile, overwrite = true)
+                processSourceFileInPlace(file)
             }
         }
         
@@ -53,15 +50,12 @@ abstract class StringEncryptionTask : DefaultTask() {
         println("StringEncryptionTask: String encryption completed")
     }
     
-    private fun processSourceFile(file: File, inputDir: File, outputDir: File) {
+    private fun processSourceFileInPlace(file: File) {
         val content = file.readText()
-        val relativePath = file.relativeTo(inputDir)
-        val outputFile = File(outputDir, relativePath.path)
-        outputFile.parentFile?.mkdirs()
         
         // Find and encrypt sensitive strings
         val processedContent = encryptSensitiveStrings(content)
-        outputFile.writeText(processedContent)
+        file.writeText(processedContent)
     }
     
     private fun encryptSensitiveStrings(content: String): String {

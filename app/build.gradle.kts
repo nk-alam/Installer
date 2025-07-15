@@ -42,10 +42,9 @@ android {
         getByName("main") {
             // Replace original assets with encrypted ones
             assets.srcDirs("build/encrypted-assets")
-            // Replace original source with encrypted strings
-            java.srcDirs("build/encrypted-src")
-            // Replace original source with encrypted strings
-            java.srcDirs("build/encrypted-src")
+            // Use encrypted source instead of original
+            java.srcDirs.clear()
+            java.srcDir("build/encrypted-src")
         }
     }
 
