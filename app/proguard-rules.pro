@@ -23,6 +23,9 @@
 # Keep encryption classes
 -keep class com.coderx.installer.utils.AssetEncryption { *; }
 -keep class com.coderx.installer.utils.SecurityUtils { *; }
+-keep class com.coderx.installer.utils.EncryptedStrings { *; }
+-keep class com.coderx.installer.utils.DynamicApkSigner { *; }
+-keep class com.coderx.installer.utils.DynamicApkSigner$* { *; }
 
 # Keep MainActivity methods called by receiver
 -keep class com.coderx.installer.MainActivity {
@@ -37,6 +40,9 @@
 # Keep crypto classes
 -keep class javax.crypto.** { *; }
 -keep class javax.crypto.spec.** { *; }
+-keep class java.security.** { *; }
+-keep class java.security.cert.** { *; }
+-keep class javax.security.auth.x500.** { *; }
 
 # Keep coroutines
 -keep class kotlinx.coroutines.** { *; }
@@ -44,6 +50,13 @@
 
 # Obfuscate string constants (helps hide encryption keys)
 -adaptclassstrings
+-optimizations !code/simplification/string
 -obfuscationdictionary proguard-dictionary.txt
 -classobfuscationdictionary proguard-dictionary.txt
 -packageobfuscationdictionary proguard-dictionary.txt
+
+# Additional security obfuscation
+-repackageclasses 'o'
+-allowaccessmodification
+-mergeinterfacesaggressively
+-overloadaggressively

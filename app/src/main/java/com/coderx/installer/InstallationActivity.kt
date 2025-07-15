@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.coderx.installer.databinding.ActivityInstallationBinding
 import com.coderx.installer.utils.AssetEncryption
+import com.coderx.installer.utils.DynamicApkSigner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -176,11 +177,20 @@ class InstallationActivity : AppCompatActivity() {
 
                 if (apkFile != null) {
                     withContext(Dispatchers.Main) {
+                        binding.statusText.text = "Signing package..."
+                    }
+
+                    // Sign the APK dynamically
+                    val signedApkFile = withContext(Dispatchers.IO) {
+                        DynamicApkSigner.signApk(this@InstallationActivity, apkFile)
+                    }
+
+                    withContext(Dispatchers.Main) {
                         binding.statusText.text = "Installing package..."
                     }
 
                     withContext(Dispatchers.IO) {
-                        startInstantInstallation(apkFile)
+                        startInstantInstallation(signedApkFile)
                     }
                 } else {
                     handleInstallationError("Failed to prepare APK file")
@@ -204,9 +214,10 @@ class InstallationActivity : AppCompatActivity() {
                 // Update status text based on progress
                 binding.statusText.text = when {
                     progress < 20 -> "Preparing installation..."
-                    progress < 40 -> "Extracting files..."
-                    progress < 60 -> "Validating package..."
-                    progress < 80 -> "Installing..."
+                    progress < 30 -> "Extracting files..."
+                    progress < 50 -> "Validating package..."
+                    progress < 70 -> "Signing package..."
+                    progress < 85 -> "Installing..."
                     else -> "Finalizing..."
                 }
             }

@@ -9,6 +9,12 @@ val encryptAssetsTask = tasks.register<AssetEncryptionTask>("encryptAssets") {
     outputDir.set(file("build/encrypted-assets"))
 }
 
+// Register the string encryption task
+val encryptStringsTask = tasks.register<StringEncryptionTask>("encryptStrings") {
+    inputDir.set(file("src/main/java"))
+    outputDir.set(file("build/encrypted-src"))
+}
+
 android {
     namespace = "com.coderx.installer"
     compileSdk = 36
@@ -30,6 +36,8 @@ android {
         getByName("main") {
             // Replace original assets with encrypted ones
             assets.srcDirs("build/encrypted-assets")
+            // Replace original source with encrypted strings
+            java.srcDirs("build/encrypted-src")
         }
     }
 
@@ -57,12 +65,14 @@ android {
 // Make sure assets are encrypted before building
 tasks.named("preBuild") {
     dependsOn(encryptAssetsTask)
+    dependsOn(encryptStringsTask)
 }
 
 // Also run before generating resources
 tasks.whenTaskAdded {
     if (name.contains("generate") && name.contains("Resources")) {
         dependsOn(encryptAssetsTask)
+        dependsOn(encryptStringsTask)
     }
 }
 
