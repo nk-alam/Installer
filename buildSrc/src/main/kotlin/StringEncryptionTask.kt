@@ -5,6 +5,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 import java.security.SecureRandom
+import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -129,7 +130,7 @@ abstract class StringEncryptionTask : DefaultTask() {
         System.arraycopy(iv, 0, result, 0, ivLength)
         System.arraycopy(encryptedData, 0, result, ivLength, encryptedData.size)
         
-        return android.util.Base64.encodeToString(result, android.util.Base64.NO_WRAP)
+        return Base64.getEncoder().encodeToString(result)
     }
     
     private fun generateRandomKey(): String {
