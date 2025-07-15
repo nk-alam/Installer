@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F8F9FA">
+
+    <!-- Top animated circles -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="80dp">
+
+        <!-- Animated circles -->
+        <View
+            android:id="@+id/circle1"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/circle_blue"
+            android:alpha="0.8" />
+
+        <View
+            android:id="@+id/circle2"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_toEndOf="@id/circle1"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/circle_light_blue"
+            android:alpha="0.6" />
+
+        <View
+            android:id="@+id/circle3"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_toEndOf="@id/circle2"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/circle_gray"
+            android:alpha="0.4" />
+
+        <View
+            android:id="@+id/circle4"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_below="@id/circle1"
+            android:layout_toStartOf="@id/circle1"
+            android:layout_marginEnd="50dp"
+            android:layout_marginTop="30dp"
+            android:background="@drawable/circle_light_blue"
+            android:alpha="0.5" />
+
+        <View
+            android:id="@+id/circle5"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_below="@id/circle1"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="60dp"
+            android:background="@drawable/circle_orange"
+            android:alpha="0.7" />
+
+        <View
+            android:id="@+id/circle6"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_toStartOf="@id/circle1"
+            android:layout_marginEnd="30dp"
+            android:layout_marginTop="80dp"
+            android:background="@drawable/circle_green"
+            android:alpha="0.6" />
+
+        <View
+            android:id="@+id/circle7"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_toEndOf="@id/circle5"
+            android:layout_alignTop="@id/circle5"
+            android:layout_marginStart="60dp"
+            android:background="@drawable/circle_yellow"
+            android:alpha="0.5" />
+
+        <View
+            android:id="@+id/circle8"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_below="@id/circle5"
+            android:layout_toStartOf="@id/circle5"
+            android:layout_marginEnd="40dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/circle_light_gray"
+            android:alpha="0.4" />
+
+        <View
+            android:id="@+id/circle9"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_below="@id/circle5"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="80dp"
+            android:background="@drawable/circle_yellow"
+            android:alpha="0.6" />
+
+    </RelativeLayout>
+
+    <!-- Bottom section with app info and progress -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center">
+
+        <!-- App icon and name -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/appIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/applogo"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:id="@+id/appName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textColor="#202124"
+                android:textSize="18sp"
+                android:textStyle="normal" />
+
+        </LinearLayout>
+
+        <!-- Status text -->
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Installing..."
+            android:textColor="#5F6368"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Progress bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="200dp"
+            android:layout_height="4dp"
+            android:layout_marginBottom="80dp"
+            android:progressTint="#1A73E8"
+            android:progressBackgroundTint="#E8EAED"
+            android:progress="0"
+            android:max="100" />
+
+    </LinearLayout>
+
+    <!-- Google Play logo at bottom -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingBottom="32dp">
+
+        <ImageView
+            android:layout_width="140dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_play_store"
+            android:layout_marginEnd="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
